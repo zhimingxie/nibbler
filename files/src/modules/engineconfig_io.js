@@ -1,19 +1,39 @@
 "use strict";
 
-const electron = require("electron");
 const fs = require("fs");
 const path = require("path");
 const querystring = require("querystring");
 
 const debork_json = require("./debork_json");
+const difficulty = require("./difficulty");
+
+// require("electron") itself throws when this module is loaded outside Electron (e.g. by tests),
+// so it's wrapped too; the fallback matches how "no engine/config selected" is already handled.
+
+let electron;
+
+try {
+	electron = require("electron");
+} catch (err) {
+	electron = {};
+}
 
 exports.filename = "engines.json";
 
 // To avoid using "remote", we rely on the main process passing userData location in the query...
+// The try/catch just allows this module to be safely require()'d outside Electron (e.g. by tests).
 
-exports.filepath = electron.app ?
+let computed_filepath;
+
+try {
+	computed_filepath = electron.app ?
 		path.join(electron.app.getPath("userData"), exports.filename) :											// in Main process
 		path.join(querystring.parse(global.location.search.slice(1))["user_data_path"], exports.filename);		// in Renderer process
+} catch (err) {
+	computed_filepath = null;
+}
+
+exports.filepath = computed_filepath;
 
 function EngineConfig() {}			// This exists solely to make instanceof work.
 EngineConfig.prototype = {};
@@ -41,6 +61,9 @@ function fix(cfg) {
 		if (typeof cfg[key].limit_by_time !== "boolean") {
 			cfg[key].limit_by_time = cfg[key].limit_by_time ? true : false;
 		}
+		if (!difficulty.is_valid(cfg[key].difficulty)) {
+			cfg[key].difficulty = difficulty.DEFAULT;			// Old configs with no such field default to "custom", i.e. unchanged behaviour.
+		}
 
 		// We don't really care about missing search_nodes and search_nodes_special properties. (?)
 	}
@@ -53,8 +76,11 @@ exports.newentry = () => {
 		"search_nodes": null,
 		"search_nodes_special": 10000,
 		"limit_by_time": false,
+		"difficulty": difficulty.DEFAULT,
 	};
 };
+
+exports.fix = fix;			// Exposed so it can be exercised directly, e.g. by tests, without touching disk.
 
 exports.load = () => {
 

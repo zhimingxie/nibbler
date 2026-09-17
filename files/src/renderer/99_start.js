@@ -70,6 +70,7 @@ for (let y = 0; y < 8; y++) {
 }
 
 statusbox.style["font-size"] = config.info_font_size.toString() + "px";
+difficultybox.style["font-size"] = config.info_font_size.toString() + "px";
 infobox.style["font-size"] = config.info_font_size.toString() + "px";
 fullbox.style["font-size"] = config.info_font_size.toString() + "px";
 movelist.style["font-size"] = config.pgn_font_size.toString() + "px";
@@ -176,6 +177,12 @@ statusbox.addEventListener("mousedown", (event) => {
 
 promotiontable.addEventListener("mousedown", (event) => {
 	hub.promotiontable_click(event);
+});
+
+// Difficulty dropdown, for human-vs-engine play (see hub.set_difficulty())...
+
+difficultyselect.addEventListener("change", (event) => {
+	hub.set_difficulty(difficultyselect.value);
 });
 
 // Graph clicks and dragging, borrowed from Ogatak...

@@ -21,6 +21,17 @@
 		<div id="rightgridder">
 
 			<div id="statusbox">Starting up...</div>
+
+			<div id="difficultybox">
+				<label for="difficultyselect">Difficulty (Play this colour):</label>
+				<select id="difficultyselect" title="Sets a per-move thinking-time budget used only when playing against the engine via Play &gt; Play this colour. Has no effect on analysis, self-play, or auto-evaluation. These are relative speed limits, not calibrated Elo ratings. Custom keeps whatever manual limit is set in the Engine menu.">
+					<option value="custom" selected>Custom (manual limits)</option>
+					<option value="easy">Easy (100 ms/move)</option>
+					<option value="medium">Medium (500 ms/move)</option>
+					<option value="hard">Hard (2000 ms/move)</option>
+				</select>
+			</div>
+
 			<div id="infobox"></div>
 			<canvas id="graph"></canvas>
 
