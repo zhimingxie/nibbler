@@ -32,6 +32,14 @@
 				</select>
 			</div>
 
+			<div id="hintsbox">
+				<div id="hintstoggle">
+					<input type="checkbox" id="hintscheckbox">
+					<label for="hintscheckbox" title="While you are playing against the engine (Play &gt; Play this colour), show the engine's top three candidate moves for the current position, with scores and short continuations. Uses a second, resource-limited engine process; the opponent's difficulty and settings are unaffected.">Show hints while playing</label>
+				</div>
+				<div id="hintscontent"></div>
+			</div>
+
 			<div id="infobox"></div>
 			<canvas id="graph"></canvas>
 
@@ -84,6 +92,7 @@
 	<script src="renderer/82_infobox.js"></script>
 	<script src="renderer/83_statusbox.js"></script>
 	<script src="renderer/90_engine.js"></script>
+	<script src="renderer/91_hints.js"></script>
 	<script src="renderer/95_hub.js"></script>
 	<script src="renderer/97_drag.js"></script>
 	<script src="renderer/99_start.js"></script>

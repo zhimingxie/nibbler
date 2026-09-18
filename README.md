@@ -16,6 +16,7 @@ For prebuilt binary releases, see the [Releases](https://github.com/rooklift/nib
 * UCI `searchmoves` functionality.
 * Automatic full-game analysis.
 * Play against Leela from any position.
+* Optional automatic top-three hints (with scores and continuations) while playing.
 * Leela self-play from any position.
 * PGN loading via menu, clipboard, or drag-and-drop.
 * Supports PGN variations of arbitrary depth.
@@ -75,6 +76,23 @@ The difficulty presets are simple per-move thinking-time budgets, applied only w
 | Custom     | Whatever manual node/time limit you've set in the Engine menu (this is the default, and what existing configs keep using) |
 
 These are relative speed limits only, **not** calibrated Elo ratings or a guarantee of beginner-friendly play - a strong engine such as Stockfish can still play very well even on "Easy". The setting has no effect on analysis, self-play, or automatic full-game analysis, which continue to use the existing Engine-menu node/time limits. Your choice is remembered per engine and survives restarting Nibbler.
+
+## Automatic hints while playing
+
+While playing against the engine you can have Nibbler show you the top three candidate moves for the *current* position, whoever is to move:
+
+1. Start a game as above (**Play &gt; Play this colour**).
+2. Tick the **Show hints while playing** checkbox below the board.
+
+The hint panel then refreshes automatically after every move by either side, showing (up to) three distinct candidate moves ranked by the engine's own `MultiPV` ranking, each with its evaluation and a short continuation. Fewer lines are shown if the position has fewer legal moves or if analysis is still in progress; a message is shown instead in checkmate/stalemate and other terminal positions.
+
+* Scores are always given in pawn units from **White's perspective** (`+` favors White, `−` favors Black); mates are shown as `#3` / `#−3`.
+* Hints are display-only - they never play a move for you or for the engine.
+* When the position changes, old hints are cleared immediately and the panel shows `Analysing...` until fresh results arrive.
+
+**Resource cost:** hints run in a *second*, deliberately small instance of the same engine executable (`MultiPV` 3, `Threads` 1, `Hash` 16 MB, about 1000 ms per position). That process is only started when hints are enabled during play, and is shut down when you untick the box, leave play mode, switch engines, or quit. Because both processes share your CPU, having hints on can still slow the opponent's search a little - this is contention, not a change of settings.
+
+**Independent of difficulty:** the hint engine's `MultiPV`, time budget, `Threads` and `Hash` apply only to itself. The playing engine's difficulty preset, `MultiPV`, node/time limits, and everything stored in `engines.json` are untouched. The checkbox is off by default (including for existing configs) and its state is remembered in `config.json`. If the chosen engine has no `MultiPV` option, a message is shown and hints are simply unavailable.
 
 ## Hints and tips
 

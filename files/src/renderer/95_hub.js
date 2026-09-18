@@ -9,6 +9,7 @@ function NewHub() {
 	hub.grapher = NewGrapher();
 	hub.looker = NewLooker();
 	hub.info_handler = NewInfoHandler();
+	hub.hints = NewHintEngine();						// Separate, resource-limited engine process for "Show hints while playing".
 	hub.status_handler = NewStatusHandler();
 
 	// Various state we have to keep track of...
@@ -135,6 +136,8 @@ let hub_props = {
 
 			break;
 		}
+
+		this.update_hints();				// Display-only; never starts or affects the playing engine's search.
 	},
 
 	position_changed: function(new_game_flag, avoid_confusion) {
@@ -497,6 +500,7 @@ let hub_props = {
 
 		this.draw_statusbox();
 		this.draw_infobox();
+		this.draw_hintbox();
 
 		this.grapher.draw(this.tree.node);
 	},
@@ -937,6 +941,10 @@ let hub_props = {
 		);
 	},
 
+	draw_hintbox: function() {
+		this.hints.draw(this.hints_active());
+	},
+
 	draw_infobox: function() {
 		this.info_handler.draw_infobox(
 			this.tree.node,
@@ -1316,6 +1324,44 @@ let hub_props = {
 	},
 
 	// ---------------------------------------------------------------------------------------------------------------------
+	// Hints while playing (opt-in training aid). These use a completely separate engine process -
+	// see renderer/91_hints.js - so the playing engine's MultiPV, difficulty, limits and options
+	// are never touched, and hint results can never cause a move to be played.
+
+	hints_active: function() {
+		return config.hints_while_playing === true && ["play_white", "play_black"].includes(config.behaviour);
+	},
+
+	set_hints_enabled: function(value) {
+
+		config.hints_while_playing = value ? true : false;
+		hintscheckbox.checked = config.hints_while_playing;
+
+		if (config.hints_while_playing) {
+			this.hints.forget_failures();
+			this.set_special_message(`Hints on (separate engine process, ${CommaNum(hints_io.BUDGET_MS)} ms/position, play mode only)`, "blue");
+		} else {
+			this.set_special_message(`Hints off`, "blue");
+		}
+
+		this.update_hints();
+		this.save_config();
+	},
+
+	update_hints: function() {
+
+		if (!this.hints_active()) {
+			this.hints.deactivate();				// Stops any search and cleans up the extra process.
+			return;
+		}
+
+		let cfg = engineconfig[this.engine.filepath];
+
+		this.hints.activate(this.engine.filepath, cfg ? cfg.args : []);
+		this.hints.analyse(this.tree.node);
+	},
+
+	// ---------------------------------------------------------------------------------------------------------------------
 	// Engine-related acks...
 
 	send_ack_engine: function() {
@@ -1479,6 +1525,10 @@ let hub_props = {
 
 		this.send_ack_limit_by_time();				// Also ack the limit_by_time boolean for that menu item.
 		this.send_ack_difficulty();					// Also sync the difficulty dropdown to this engine's stored choice.
+
+		this.hints.deactivate();					// Engine replaced - any hint process belongs to the old engine.
+		this.hints.forget_failures();
+		this.update_hints();
 
 		this.info_handler.reset_engine_info();
 		this.info_handler.must_draw_infobox();		// To display the new stderr log that appears.
@@ -2476,6 +2526,7 @@ let hub_props = {
 	// Misc...
 
 	quit: function() {
+		this.hints.deactivate();
 		this.engine.shutdown();
 		this.save_config();
 		this.save_engineconfig();
