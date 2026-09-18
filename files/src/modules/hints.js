@@ -223,15 +223,15 @@ exports.NewStore = function() {
 	};
 
 	store.depth = function() {
-		let best = null;
+		let shallowest = null;					// The shallowest line is the honest description of the whole set.
 		for (let entry of this.list()) {
 			if (typeof entry.depth === "number") {
-				if (best === null || entry.depth < best) {
-					best = entry.depth;			// The shallowest line is the honest description of the whole set.
+				if (shallowest === null || entry.depth < shallowest) {
+					shallowest = entry.depth;
 				}
 			}
 		}
-		return best;
+		return shallowest;
 	};
 
 	return store;

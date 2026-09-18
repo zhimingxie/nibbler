@@ -9,7 +9,7 @@ function NewHub() {
 	hub.grapher = NewGrapher();
 	hub.looker = NewLooker();
 	hub.info_handler = NewInfoHandler();
-	hub.hints = NewHintEngine(hub);						// Separate, resource-limited engine process for "Show hints while playing".
+	hub.hints = NewHintEngine();						// Separate, resource-limited engine process for "Show hints while playing".
 	hub.status_handler = NewStatusHandler();
 
 	// Various state we have to keep track of...

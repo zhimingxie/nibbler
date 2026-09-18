@@ -143,6 +143,12 @@ body {
 	color: #cccccc;
 }
 
+#hintscontent .hints_note,
+#hintscontent .hints_rank,
+#hintscontent .hints_pv {
+	color: #999999;
+}
+
 #infobox {
 	grid-area: d;
 	margin: 1em 1em 0 1em;

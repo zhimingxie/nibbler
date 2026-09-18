@@ -221,6 +221,14 @@ let fake_engine_dir = fs.mkdtempSync(path.join(os.tmpdir(), "nibbler-hints-test-
 let fake_engine_path = path.join(fake_engine_dir, "fake_engine.js");
 fs.writeFileSync(fake_engine_path, FAKE_ENGINE);
 
+process.on("exit", () => {					// Registered immediately, so the temp dir goes away however we exit.
+	try {
+		fs.rmSync(fake_engine_dir, {recursive: true, force: true});
+	} catch (err) {
+		// Pass - a leftover temp directory isn't worth failing the run over.
+	}
+});
+
 function FakeBoard(active) {
 	return {
 		active: active,
@@ -256,7 +264,7 @@ function load_hint_engine() {
 
 	let NewHintEngine = factory(child_process, readline, path, hints, (s) => String(s), hintscontent);
 
-	return {engine: NewHintEngine({}), hintscontent};
+	return {engine: NewHintEngine(), hintscontent};
 }
 
 function wait_for(predicate, ms = 5000) {
@@ -421,20 +429,10 @@ async function lifecycle_tests() {
 	});
 }
 
-function cleanup() {
-	try {
-		fs.rmSync(fake_engine_dir, {recursive: true, force: true});
-	} catch (err) {
-		// Pass - a leftover temp directory isn't worth failing the run over.
-	}
-}
-
 lifecycle_tests().then(() => {
-	cleanup();
 	console.log(`\n${passed} test(s) passed.`);
 	process.exit(0);
 }).catch(err => {
-	cleanup();
 	console.log(`\nFAILED: ${err.stack || err}`);
 	process.exit(1);
 });

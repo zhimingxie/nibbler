@@ -16,11 +16,9 @@
 // The parsing, ranking, and score-conversion logic lives in modules/hints.js so that it can be
 // unit tested without Electron; see test/hints.test.js.
 
-function NewHintEngine(hub) {
+function NewHintEngine() {
 
 	let hints = Object.create(null);
-
-	hints.hub = hub;
 
 	hints.exe = null;
 	hints.scanner = null;
