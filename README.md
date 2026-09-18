@@ -57,6 +57,25 @@ Most people won't need them, but all of Leela's engine options can be set in two
 * Leela automatically loads options from a file called `lc0.config` at startup - see [here](https://lczero.org/play/configuration/flags/#config-file).
 * Nibbler will send UCI options specified in Nibbler's own `engines.json` file (which you can find via the Dev menu).
 
+## Playing against the engine, with a difficulty preset
+
+To play against the loaded engine (Leela or Stockfish, etc.):
+
+1. Load and configure an engine (see above).
+2. Optionally pick a difficulty from the **Difficulty** dropdown below the board: Easy, Medium, Hard, or Custom.
+3. Use **Play &gt; Play this colour**. This makes the engine play whichever colour is *currently* to move (so, to play White yourself, make sure it's Black's turn before selecting it - e.g. play your first move as White, then choose "Play this colour" once it's Black to move, and the engine will reply as Black).
+
+The difficulty presets are simple per-move thinking-time budgets, applied only while playing this way:
+
+| Difficulty | Budget       |
+|---|---|
+| Easy       | 100 ms/move  |
+| Medium     | 500 ms/move  |
+| Hard       | 2000 ms/move |
+| Custom     | Whatever manual node/time limit you've set in the Engine menu (this is the default, and what existing configs keep using) |
+
+These are relative speed limits only, **not** calibrated Elo ratings or a guarantee of beginner-friendly play - a strong engine such as Stockfish can still play very well even on "Easy". The setting has no effect on analysis, self-play, or automatic full-game analysis, which continue to use the existing Engine-menu node/time limits. Your choice is remembered per engine and survives restarting Nibbler.
+
 ## Hints and tips
 
 An option to enable the UCI `searchmoves` feature is available in the Analysis menu. Once enabled, one or more moves can be specified as moves to focus on; Leela will ignore other moves. This is useful when you think Leela isn't giving a certain move enough attention.

@@ -119,7 +119,11 @@ let hub_props = {
 					break;
 				}
 
-				if (this.engine.search_desired.node !== this.tree.node || this.engine.search_desired.limit !== this.node_limit()) {
+				let desired = this.effective_search_limit();
+
+				if (this.engine.search_desired.node !== this.tree.node ||
+					this.engine.search_desired.limit !== desired.limit ||
+					this.engine.search_desired.limit_by_time !== desired.by_time) {
 					this.__go(this.tree.node);
 				}
 
@@ -957,7 +961,8 @@ let hub_props = {
 			this.engine.set_search_desired(null);
 			return;
 		}
-		this.engine.set_search_desired(node, this.node_limit(), engineconfig[this.engine.filepath].limit_by_time, node.searchmoves);
+		let desired = this.effective_search_limit();
+		this.engine.set_search_desired(node, desired.limit, desired.by_time, node.searchmoves);
 	},
 
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -1260,6 +1265,57 @@ let hub_props = {
 	},
 
 	// ---------------------------------------------------------------------------------------------------------------------
+	// Difficulty (human-vs-engine play only, i.e. the "play_white" / "play_black" behaviours started
+	// via "Play this colour"). Self-play, analysis, and auto/back-analysis are never affected - see
+	// modules/difficulty.js for the actual preset values and the isolation logic.
+
+	effective_search_limit: function() {
+
+		// What limit (and whether it's a time limit) should actually be used for the *next* search?
+		// This is node_limit() / limit_by_time, unless a difficulty preset overrides them for the
+		// current (play_white / play_black) behaviour.
+
+		let cfg = engineconfig[this.engine.filepath];
+
+		return difficulty_io.effective_search_params(
+			config.behaviour,
+			cfg,
+			this.node_limit(),
+			cfg ? cfg.limit_by_time : false
+		);
+	},
+
+	set_difficulty: function(value) {
+
+		value = difficulty_io.sanitize(value);
+
+		let cfg = engineconfig[this.engine.filepath];
+
+		if (!cfg || cfg.difficulty === value) {
+			this.send_ack_difficulty();		// Keep the dropdown in sync even if nothing changed.
+			return;
+		}
+
+		cfg.difficulty = value;
+
+		let preset = difficulty_io.PRESETS[value];
+
+		if (preset) {
+			this.set_special_message(`Difficulty now ${preset.label} (${CommaNum(preset.ms)} ms/move, play mode only)`, "blue");
+		} else {
+			this.set_special_message(`Difficulty now Custom (manual Engine menu limits, play mode only)`, "blue");
+		}
+
+		this.send_ack_difficulty();
+		this.handle_search_params_change();		// Applies immediately if a play-mode search is already desired; otherwise takes effect on the next engine move.
+	},
+
+	send_ack_difficulty: function() {
+		let cfg = engineconfig[this.engine.filepath];
+		difficultyselect.value = difficulty_io.sanitize(cfg ? cfg.difficulty : difficulty_io.CUSTOM);
+	},
+
+	// ---------------------------------------------------------------------------------------------------------------------
 	// Engine-related acks...
 
 	send_ack_engine: function() {
@@ -1422,6 +1478,7 @@ let hub_props = {
 		this.send_ack_node_limit(true);
 
 		this.send_ack_limit_by_time();				// Also ack the limit_by_time boolean for that menu item.
+		this.send_ack_difficulty();					// Also sync the difficulty dropdown to this engine's stored choice.
 
 		this.info_handler.reset_engine_info();
 		this.info_handler.must_draw_infobox();		// To display the new stderr log that appears.

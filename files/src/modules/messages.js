@@ -9,6 +9,13 @@ evaluate one side of the position only. The top move is automatically played on 
 the board upon reaching the node limit (see the Engine menu). This allows you to \
 play against Leela.
 
+The Difficulty dropdown, below the board, sets a simple per-move thinking-time \
+budget - Easy 100 ms, Medium 500 ms, Hard 2000 ms - used only while playing this \
+way. It has no effect on analysis, self-play, or auto-evaluation. These are \
+relative speed limits, not calibrated Elo ratings: a strong engine (e.g. \
+Stockfish) may still play very well even on "Easy". Choose "Custom" to keep using \
+the manual node/time limits set in the Engine menu instead.
+
 The "self-play" option causes Leela to play itself.
 
 Higher temperature makes the moves less predictable, but at some cost to move \

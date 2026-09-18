@@ -41,9 +41,10 @@ body {
 	margin: 1em 0 0 0;
 	height: 0;							/* js needs to keep this equal to the boardsize */
 	grid-template-columns: none;
-	grid-template-rows: min-content 1fr min-content;
+	grid-template-rows: min-content min-content 1fr min-content;
 	grid-template-areas:
 		"c"
+		"h"
 		"d"
 		"e";
 }
@@ -87,6 +88,25 @@ body {
 	pointer-events: auto;
 	overflow: hidden;
 	white-space: pre;
+}
+
+#difficultybox {
+	grid-area: h;
+	margin: 0.4em 0 0 1em;
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	color: #999999;
+	font-family: monospace, monospace;
+	pointer-events: auto;
+}
+
+#difficultybox label {
+	white-space: nowrap;
+}
+
+#difficultyselect {
+	pointer-events: auto;
 }
 
 #infobox {

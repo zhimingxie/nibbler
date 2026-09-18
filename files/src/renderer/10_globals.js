@@ -8,6 +8,8 @@
 const boardfriends = document.getElementById("boardfriends");
 const boardsquares = document.getElementById("boardsquares");
 const canvas = document.getElementById("canvas");
+const difficultybox = document.getElementById("difficultybox");
+const difficultyselect = document.getElementById("difficultyselect");
 const fenbox = document.getElementById("fenbox");
 const graph = document.getElementById("graph");
 const rightgridder = document.getElementById("rightgridder");
@@ -37,6 +39,7 @@ const child_process = require("child_process");
 const clipboard = require("electron").clipboard;
 const config_io = require("./modules/config_io");
 const custom_uci = require("./modules/custom_uci");
+const difficulty_io = require("./modules/difficulty");
 const engineconfig_io = require("./modules/engineconfig_io");
 const fs = require("fs");
 const images = require("./modules/images");
