@@ -36,6 +36,7 @@ function NewHintEngine(hub) {
 	hints.known_options = Object.create(null);
 
 	hints.searching = false;				// A "go" has been sent and no "bestmove" has come back yet.
+	hints.stop_sent = false;				// A "stop" has been sent for the running search - don't send it again.
 	hints.generation = 0;					// Incremented for every search (and every invalidation).
 	hints.pending_node = null;				// Node we want to search as soon as we're able to.
 	hints.node = null;						// Node the current results / pending search refer to.
@@ -44,6 +45,7 @@ function NewHintEngine(hub) {
 	hints.message = "";						// Non-fatal status message for the UI (e.g. no engine, unsupported engine).
 	hints.dirty = true;						// Whether the UI needs redrawing.
 	hints.drawn_html = null;
+	hints.drawn_enabled = null;
 
 	// -------------------------------------------------------------------------------------------
 	// Lifecycle...
@@ -77,6 +79,7 @@ function NewHintEngine(hub) {
 		this.chess960 = false;
 		this.known_options = Object.create(null);
 		this.searching = false;
+		this.stop_sent = false;
 		this.message = "Hints: starting engine...";
 		this.dirty = true;
 
@@ -137,6 +140,7 @@ function NewHintEngine(hub) {
 
 		this.have_quit = true;
 		this.searching = false;
+		this.stop_sent = false;
 		this.pending_node = null;
 		this.ready = false;
 		this.uciok = false;
@@ -203,6 +207,7 @@ function NewHintEngine(hub) {
 		if (line.startsWith("bestmove")) {
 			// NEVER passed to the hub - hints must not play moves.
 			this.searching = false;
+			this.stop_sent = false;
 			this.store.finish(this.generation);
 			this.dirty = true;
 			this.maybe_send_pending();
@@ -301,7 +306,8 @@ function NewHintEngine(hub) {
 		this.node = null;
 		this.message = "";
 		this.dirty = true;
-		if (this.searching) {
+		if (this.searching && !this.stop_sent) {
+			this.stop_sent = true;
 			this.send("stop");						// The bestmove will arrive later and be discarded.
 		}
 	};
@@ -332,12 +338,19 @@ function NewHintEngine(hub) {
 
 		this.pending_node = null;
 		this.searching = true;
+		this.stop_sent = false;
 	};
 
 	// -------------------------------------------------------------------------------------------
 	// Drawing...
 
 	hints.draw = function(enabled) {
+
+		if (!this.dirty && enabled === this.drawn_enabled) {
+			return;							// Rendering PVs isn't free, and this is called from the main draw loop.
+		}
+
+		this.drawn_enabled = enabled;
 
 		let html = enabled ? this.html() : "";
 
