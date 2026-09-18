@@ -409,6 +409,37 @@ async function lifecycle_tests() {
 		engine.deactivate();
 	});
 
+	await async_test("switching engines replaces the process without the old one's exit killing the new one", async () => {
+
+		let {engine} = load_hint_engine();
+		engine.activate(process.execPath, [fake_engine_path]);
+		await wait_for(() => engine.ready);
+
+		let first_pid = engine.exe.pid;
+
+		engine.activate(process.execPath, [fake_engine_path, "--second"]);		// Different args - must restart.
+		let second_pid = engine.exe.pid;
+		assert.notStrictEqual(second_pid, first_pid);
+
+		await wait_for(() => {													// The old process goes away...
+			try {
+				process.kill(first_pid, 0);
+				return false;
+			} catch (err) {
+				return true;
+			}
+		});
+
+		await wait_for(() => engine.ready);										// ...and the new one is alive and usable.
+		assert.ok(engine.exe);
+		assert.strictEqual(engine.exe.pid, second_pid);
+
+		engine.analyse(FakeNode("w"));
+		await wait_for(() => engine.store.list().length === 3);
+
+		engine.deactivate();
+	});
+
 	await async_test("deactivate() shuts the extra process down and leaves nothing running", async () => {
 
 		let {engine} = load_hint_engine();

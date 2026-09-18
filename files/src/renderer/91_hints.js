@@ -97,26 +97,28 @@ function NewHintEngine() {
 		this.filepath = filepath;
 		this.args_string = args_string;
 
-		this.exe.once("error", (err) => {
-			if (this.have_quit) return;
+		let exe = this.exe;					// Captured, so late events from a replaced process can be ignored.
+
+		exe.once("error", (err) => {
+			if (this.have_quit || this.exe !== exe) return;
 			this.failed_filepath = filepath;
 			this.message = `Hints: engine process error (${err.toString()}).`;
 			this.shutdown();
 		});
 
-		this.exe.once("exit", () => {
-			if (this.have_quit) return;
+		exe.once("exit", () => {
+			if (this.have_quit || this.exe !== exe) return;
 			if (!this.message) {						// Don't clobber a more informative message (e.g. "no MultiPV option").
 				this.message = "Hints: the hint engine process exited.";
 			}
 			this.shutdown();
 		});
 
-		this.scanner = readline.createInterface({input: this.exe.stdout, output: undefined, terminal: false});
-		this.exe.stderr.resume();			// Drain it - the playing engine's stderr is already shown in the infobox.
+		this.scanner = readline.createInterface({input: exe.stdout, output: undefined, terminal: false});
+		exe.stderr.resume();				// Drain it - the playing engine's stderr is already shown in the infobox.
 
 		this.scanner.on("line", (line) => {
-			if (this.have_quit) return;
+			if (this.have_quit || this.exe !== exe) return;
 			this.receive(line);
 		});
 
