@@ -86,7 +86,7 @@ While playing against the engine you can have Nibbler show you the top three can
 
 The hint panel then refreshes automatically after every move by either side, showing (up to) three distinct candidate moves ranked by the engine's own `MultiPV` ranking, each with its evaluation and a short continuation. Fewer lines are shown if the position has fewer legal moves or if analysis is still in progress; a message is shown instead in checkmate/stalemate and other terminal positions.
 
-* Scores are always given in pawn units from **White's perspective** (`+` favors White, `−` favors Black); mates are shown as `#3` / `#-3`.
+* Scores are always given in pawn units from **White's perspective** (`+` favors White, `−` favors Black); mates are shown as `#3` / `#−3`.
 * Hints are display-only - they never play a move for you or for the engine.
 * When the position changes, old hints are cleared immediately and the panel shows `Analysing...` until fresh results arrive.
 

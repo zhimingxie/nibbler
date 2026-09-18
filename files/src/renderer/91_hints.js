@@ -25,6 +25,7 @@ function NewHintEngine() {
 	hints.have_quit = false;
 
 	hints.filepath = "";					// The executable we are running (or tried to run).
+	hints.args_string = null;				// The args we launched with, so a changed engine config restarts the process.
 	hints.failed_filepath = null;			// An executable we already failed with - don't retry it in a loop.
 	hints.uciok = false;
 	hints.ready = false;					// Received both uciok and readyok, and options have been sent.
@@ -52,7 +53,9 @@ function NewHintEngine() {
 
 		// Lazily start the hint process. Safe to call every time the position changes.
 
-		if (this.exe && this.filepath === filepath) {
+		let args_string = JSON.stringify(Array.isArray(args) ? args : []);
+
+		if (this.exe && this.filepath === filepath && this.args_string === args_string) {
 			return;
 		}
 
@@ -92,6 +95,7 @@ function NewHintEngine() {
 		}
 
 		this.filepath = filepath;
+		this.args_string = args_string;
 
 		this.exe.once("error", (err) => {
 			if (this.have_quit) return;
@@ -102,7 +106,9 @@ function NewHintEngine() {
 
 		this.exe.once("exit", () => {
 			if (this.have_quit) return;
-			this.message = "Hints: the hint engine process exited.";
+			if (!this.message) {						// Don't clobber a more informative message (e.g. "no MultiPV option").
+				this.message = "Hints: the hint engine process exited.";
+			}
 			this.shutdown();
 		});
 
@@ -240,7 +246,7 @@ function NewHintEngine() {
 			return;
 		}
 
-		if (this.known_options["uci_chess960"]) {
+		if (this.known_options["uci_chess960"]) {		// Exactly what engine.js does for the playing engine, so both talk the same dialect.
 			this.send("setoption name UCI_Chess960 value true");
 			this.chess960 = true;
 		}
@@ -266,8 +272,10 @@ function NewHintEngine() {
 			return;
 		}
 
-		if (this.node === node && (this.searching || this.pending_node === node || this.store.finished)) {
-			return;									// Already dealing with this exact position.
+		if (this.node === node) {
+			if (this.searching || this.pending_node === node || this.store.list().length > 0) {
+				return;								// Already dealing with (or done with) this exact position.
+			}
 		}
 
 		this.invalidate();							// Old hints are cleared immediately, before anything else.
@@ -353,6 +361,10 @@ function NewHintEngine() {
 
 	hints.html = function() {
 
+		if (this.message || this.terminal_message) {		// Don't imply we're analysing a position when we aren't.
+			return `<span class="hints_note">${SafeStringHTML(this.message || this.terminal_message)}</span>`;
+		}
+
 		let lines = [];
 
 		let node = this.node;
@@ -360,11 +372,6 @@ function NewHintEngine() {
 
 		lines.push(`<span class="hints_header">Hints for the current position &mdash; ${hints_io.side_to_move_string(active)}</span>`);
 		lines.push(`<span class="hints_note">White perspective: + favors White, &minus; favors Black</span>`);
-
-		if (this.message || this.terminal_message) {
-			lines.push(`<span class="hints_note">${SafeStringHTML(this.message || this.terminal_message)}</span>`);
-			return lines.join("<br>");
-		}
 
 		let entries = node ? this.store.list() : [];
 
@@ -397,6 +404,7 @@ function NewHintEngine() {
 		let result = [];
 
 		for (let move of pv.slice(0, hints_io.MAX_PV_PLIES)) {
+			move = board.c960_castling_converter(move);			// As the infobox does, since engines may send either castling format.
 			if (board.illegal(move)) {
 				break;
 			}

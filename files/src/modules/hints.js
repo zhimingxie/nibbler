@@ -114,7 +114,7 @@ exports.format_score = (score) => {
 		if (score.value === 0) {
 			return "#";						// Mate on the board (some engines send "mate 0" for a mated position).
 		}
-		return (score.value > 0) ? `#${score.value}` : `#-${Math.abs(score.value)}`;
+		return (score.value > 0) ? `#${score.value}` : `#\u2212${Math.abs(score.value)}`;
 	}
 
 	let pawns = score.value / 100;
@@ -224,8 +224,9 @@ exports.NewStore = function() {
 
 	store.depth = function() {
 		let shallowest = null;					// The shallowest line is the honest description of the whole set.
-		for (let entry of this.list()) {
-			if (typeof entry.depth === "number") {
+		for (let rank = 1; rank <= exports.MULTIPV; rank++) {
+			let entry = this.entries[rank];
+			if (entry && typeof entry.depth === "number") {
 				if (shallowest === null || entry.depth < shallowest) {
 					shallowest = entry.depth;
 				}

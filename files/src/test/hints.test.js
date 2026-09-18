@@ -81,7 +81,7 @@ test("format_score() shows pawn units with an explicit sign, and mates distinctl
 	assert.strictEqual(hints.format_score({type: "cp", value: -120}), "\u22121.20");
 	assert.strictEqual(hints.format_score({type: "cp", value: 0}), "0.00");
 	assert.strictEqual(hints.format_score({type: "mate", value: 3}), "#3");
-	assert.strictEqual(hints.format_score({type: "mate", value: -2}), "#-2");
+	assert.strictEqual(hints.format_score({type: "mate", value: -2}), "#\u22122");
 	assert.strictEqual(hints.format_score(null), "?");
 });
 
@@ -229,24 +229,26 @@ process.on("exit", () => {					// Registered immediately, so the temp dir goes a
 	}
 });
 
-function FakeBoard(active) {
+function FakeBoard(active, counters) {
 	return {
 		active: active,
 		fen: () => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 		illegal: () => "",
+		c960_castling_converter: (s) => s,
 		nice_string: (s) => s.toUpperCase(),
-		move: function() { return this; },
+		move: function() { counters.moves++; return this; },
 	};
 }
 
 function FakeNode(active = "w", history = ["e2e4", "e7e5"]) {
 	let node = {
 		destroyed: false,
-		board: FakeBoard(active),
+		counters: {moves: 0},
 		terminal_reason: () => "",
 		history: () => history,
 		history_old_format: () => history,
 	};
+	node.board = FakeBoard(active, node.counters);
 	node.get_root = () => node;
 	return node;
 }
@@ -348,6 +350,28 @@ async function lifecycle_tests() {
 
 		await wait_for(() => engine.store.list().length === 3);
 		assert.deepStrictEqual(engine.store.list()[0].score, {type: "cp", value: -34});		// Black to move, flipped.
+
+		engine.deactivate();
+	});
+
+	await async_test("a 'bestmove' from the hint engine only ends the search - it never plays a move", async () => {
+
+		let {engine} = load_hint_engine();
+		engine.activate(process.execPath, [fake_engine_path]);
+		await wait_for(() => engine.ready);
+
+		let node = FakeNode("w");
+		engine.analyse(node);
+		await wait_for(() => engine.store.list().length === 3);
+
+		let before = engine.store.list();
+
+		await wait_for(() => engine.searching === false);			// i.e. "bestmove e2e4" has arrived and been handled.
+
+		assert.strictEqual(node.counters.moves, 0);					// Nothing was applied to the board at all.
+		assert.strictEqual(engine.node, node);						// Still the same position.
+		assert.deepStrictEqual(engine.store.list(), before);			// Results unchanged, apart from...
+		assert.strictEqual(engine.store.finished, true);			// ...the search being marked complete.
 
 		engine.deactivate();
 	});
