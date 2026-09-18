@@ -71,6 +71,7 @@ for (let y = 0; y < 8; y++) {
 
 statusbox.style["font-size"] = config.info_font_size.toString() + "px";
 difficultybox.style["font-size"] = config.info_font_size.toString() + "px";
+hintsbox.style["font-size"] = config.info_font_size.toString() + "px";
 infobox.style["font-size"] = config.info_font_size.toString() + "px";
 fullbox.style["font-size"] = config.info_font_size.toString() + "px";
 movelist.style["font-size"] = config.pgn_font_size.toString() + "px";
@@ -183,6 +184,14 @@ promotiontable.addEventListener("mousedown", (event) => {
 
 difficultyselect.addEventListener("change", (event) => {
 	hub.set_difficulty(difficultyselect.value);
+});
+
+// "Show hints while playing" checkbox (see hub.set_hints_enabled())...
+
+hintscheckbox.checked = config.hints_while_playing ? true : false;
+
+hintscheckbox.addEventListener("change", (event) => {
+	hub.set_hints_enabled(hintscheckbox.checked);
 });
 
 // Graph clicks and dragging, borrowed from Ogatak...

@@ -138,6 +138,8 @@ exports.defaults = {
 
 	"show_engine_state": false,
 
+	"hints_while_playing": false,			// Opt-in top-three hints while playing against the engine. Off by default, including for old configs.
+
 	"book_depth": 10,
 
 	"save_enabled": false,
