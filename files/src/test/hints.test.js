@@ -217,7 +217,8 @@ rl.on("line", (line) => {
 });
 `;
 
-let fake_engine_path = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "nibbler-hints-test-")), "fake_engine.js");
+let fake_engine_dir = fs.mkdtempSync(path.join(os.tmpdir(), "nibbler-hints-test-"));
+let fake_engine_path = path.join(fake_engine_dir, "fake_engine.js");
 fs.writeFileSync(fake_engine_path, FAKE_ENGINE);
 
 function FakeBoard(active) {
@@ -354,7 +355,8 @@ async function lifecycle_tests() {
 		engine.analyse(node);
 
 		assert.strictEqual(engine.searching, false);
-		assert.ok(engine.message.includes("Checkmate"));
+		assert.ok(engine.terminal_message.includes("Checkmate"));
+		engine.draw(true);
 		assert.strictEqual(engine.store.list().length, 0);
 
 		engine.deactivate();
@@ -402,18 +404,37 @@ async function lifecycle_tests() {
 
 	await async_test("a failed process start yields a nonfatal message, not a crash", async () => {
 
-		let {engine} = load_hint_engine();
+		let {engine, hintscontent} = load_hint_engine();
 		engine.activate(path.join(os.tmpdir(), "definitely-not-an-engine-" + Date.now()), []);
 		await wait_for(() => engine.message.length > 0);
 		assert.ok(engine.message.startsWith("Hints:"));
+
+		// The engine-level message must survive a position change (which calls invalidate())...
+
+		engine.analyse(FakeNode("w"));
+		assert.ok(engine.message.startsWith("Hints:"));
+		engine.draw(true);
+		assert.ok(hintscontent.innerHTML.includes("Hints:"));
+
 		engine.deactivate();
+		assert.strictEqual(engine.message, "");
 	});
 }
 
+function cleanup() {
+	try {
+		fs.rmSync(fake_engine_dir, {recursive: true, force: true});
+	} catch (err) {
+		// Pass - a leftover temp directory isn't worth failing the run over.
+	}
+}
+
 lifecycle_tests().then(() => {
+	cleanup();
 	console.log(`\n${passed} test(s) passed.`);
 	process.exit(0);
 }).catch(err => {
+	cleanup();
 	console.log(`\nFAILED: ${err.stack || err}`);
 	process.exit(1);
 });

@@ -24,7 +24,6 @@ function NewHintEngine(hub) {
 
 	hints.exe = null;
 	hints.scanner = null;
-	hints.err_scanner = null;
 	hints.have_quit = false;
 
 	hints.filepath = "";					// The executable we are running (or tried to run).
@@ -42,7 +41,8 @@ function NewHintEngine(hub) {
 	hints.node = null;						// Node the current results / pending search refer to.
 
 	hints.store = hints_io.NewStore();
-	hints.message = "";						// Non-fatal status message for the UI (e.g. no engine, unsupported engine).
+	hints.message = "";						// Non-fatal engine-level status message (e.g. no engine, unsupported engine, start failure).
+	hints.terminal_message = "";			// Position-level message (e.g. checkmate), cleared whenever the position changes.
 	hints.dirty = true;						// Whether the UI needs redrawing.
 	hints.drawn_html = null;
 	hints.drawn_enabled = null;
@@ -109,11 +109,7 @@ function NewHintEngine(hub) {
 		});
 
 		this.scanner = readline.createInterface({input: this.exe.stdout, output: undefined, terminal: false});
-		this.err_scanner = readline.createInterface({input: this.exe.stderr, output: undefined, terminal: false});
-
-		this.err_scanner.on("line", (line) => {
-			// Deliberately ignored - the playing engine's stderr is already shown in the infobox.
-		});
+		this.exe.stderr.resume();			// Drain it - the playing engine's stderr is already shown in the infobox.
 
 		this.scanner.on("line", (line) => {
 			if (this.have_quit) return;
@@ -124,7 +120,7 @@ function NewHintEngine(hub) {
 	};
 
 	hints.deactivate = function() {			// Toggled off, or left play mode.
-		if (!this.exe && !this.node && !this.pending_node && !this.message) {
+		if (!this.exe && !this.node && !this.pending_node && !this.message && !this.terminal_message) {
 			return;							// Nothing to do - avoid needless churn, since this is called on every position change.
 		}
 		this.invalidate();
@@ -153,11 +149,6 @@ function NewHintEngine(hub) {
 		if (this.scanner) {
 			this.scanner.close();
 			this.scanner = null;
-		}
-
-		if (this.err_scanner) {
-			this.err_scanner.close();
-			this.err_scanner = null;
 		}
 
 		if (exe) {
@@ -287,7 +278,7 @@ function NewHintEngine(hub) {
 		let terminal = node.terminal_reason();
 
 		if (terminal) {
-			this.message = `Hints: game over (${terminal}).`;
+			this.terminal_message = `Hints: game over (${terminal}).`;
 			this.dirty = true;
 			return;
 		}
@@ -304,7 +295,7 @@ function NewHintEngine(hub) {
 		this.store.clear();
 		this.pending_node = null;
 		this.node = null;
-		this.message = "";
+		this.terminal_message = "";			// Engine-level messages (this.message) are deliberately NOT cleared here.
 		this.dirty = true;
 		if (this.searching && !this.stop_sent) {
 			this.stop_sent = true;
@@ -372,8 +363,8 @@ function NewHintEngine(hub) {
 		lines.push(`<span class="hints_header">Hints for the current position &mdash; ${hints_io.side_to_move_string(active)}</span>`);
 		lines.push(`<span class="hints_note">White perspective: + favors White, &minus; favors Black</span>`);
 
-		if (this.message) {
-			lines.push(`<span class="hints_note">${SafeStringHTML(this.message)}</span>`);
+		if (this.message || this.terminal_message) {
+			lines.push(`<span class="hints_note">${SafeStringHTML(this.message || this.terminal_message)}</span>`);
 			return lines.join("<br>");
 		}
 
